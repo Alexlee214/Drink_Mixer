@@ -535,58 +535,68 @@ void drawRatioAdjust(){
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void drawKeypad(){
-  uint8_t i, h;
-  u8g_uint_t w, d;
-
-  h = u8g.getFontAscent() - u8g.getFontDescent();
-  w = u8g.getWidth() / 6;
-  for(byte countItem = 0; countItem < 27; countItem++){
-    switch(countItem % 6){
-      case 0: d = ((w - u8g.getStrWidth("A")) / 2);
-              break;
-      case 1: d = ((w - u8g.getStrWidth("A")) / 2) + w;
-              break;
-      case 2: d = ((w - u8g.getStrWidth("A")) / 2) + 2 * w;
-              break;
-      case 3: d = ((w - u8g.getStrWidth("A")) / 2) + 3 * w;
-              break;
-      case 4: d = ((w - u8g.getStrWidth("A")) / 2) + 4 * w;
-              break;
-      case 5: d = ((w - u8g.getStrWidth("A")) / 2) + 5 * w;
-              break;
+   u8g_uint_t w, d;
+  
+  if(numDrinks < 12){
+    uint8_t i, h;
+  
+    h = u8g.getFontAscent() - u8g.getFontDescent();
+    w = u8g.getWidth() / 6;
+    for(byte countItem = 0; countItem < 27; countItem++){
+      switch(countItem % 6){
+        case 0: d = ((w - u8g.getStrWidth("A")) / 2);
+                break;
+        case 1: d = ((w - u8g.getStrWidth("A")) / 2) + w;
+                break;
+        case 2: d = ((w - u8g.getStrWidth("A")) / 2) + 2 * w;
+                break;
+        case 3: d = ((w - u8g.getStrWidth("A")) / 2) + 3 * w;
+                break;
+        case 4: d = ((w - u8g.getStrWidth("A")) / 2) + 4 * w;
+                break;
+        case 5: d = ((w - u8g.getStrWidth("A")) / 2) + 5 * w;
+                break;
+      }
+  
+      u8g.setColorIndex(1);
+      
+      if ( (countItem + 1) == cursorPos ) {
+        u8g.drawBox((countItem % 6) * w, ((countItem / 6) * h + 1) + (countItem / 6), w, h);
+        u8g.setColorIndex(0);
+      }
+  
+      //draw the characters and the delete button
+      if(countItem == 26) u8g.drawBitmapP(d - 2, ((countItem / 6) * h + 1) + (countItem / 6), 1, 8, deleteButton);
+      else{
+        char myChar[2] = {(char)countItem + 65, '\0'};
+        //u8g.setCursorPos(d, (countItem / 6 ) * h + 1 + (countItem / 6));
+        //u8g.print(myChar);
+        u8g.drawStr(d, (countItem / 6 ) * h + 1 + (countItem / 6), myChar);
+      }
     }
-
-    u8g.setColorIndex(1);
-    
-    if ( (countItem + 1) == cursorPos ) {
-      u8g.drawBox((countItem % 6) * w, ((countItem / 6) * h + 1) + (countItem / 6), w, h);
+  
+    //while(true){
+      
+    //}
+   
+    //draw the done button
+    d = (u8g.getWidth() - u8g.getStrWidth("DONE")) / 2;
+    if(cursorPos == 28){
+      u8g.setColorIndex(1);
+      u8g.drawBox(0, 5 * h + 6, u8g.getWidth(), h);
       u8g.setColorIndex(0);
+    }else{
+      u8g.setColorIndex(1);
     }
-
-    //draw the characters and the delete button
-    if(countItem == 26) u8g.drawBitmapP(d - 2, ((countItem / 6) * h + 1) + (countItem / 6), 1, 8, deleteButton);
-    else{
-      char myChar[2] = {(char)countItem + 65, '\0'};
-      //u8g.setCursorPos(d, (countItem / 6 ) * h + 1 + (countItem / 6));
-      //u8g.print(myChar);
-      u8g.drawStr(d, (countItem / 6 ) * h + 1 + (countItem / 6), myChar);
-    }
-  }
-
-  //while(true){
-    
-  //}
- 
-  //draw the done button
-  d = (u8g.getWidth() - u8g.getStrWidth("DONE")) / 2;
-  if(cursorPos == 28){
-    u8g.setColorIndex(1);
-    u8g.drawBox(0, 5 * h + 6, u8g.getWidth(), h);
-    u8g.setColorIndex(0);
+      u8g.drawStr(d, 5 * h + 6, "DONE");
   }else{
-    u8g.setColorIndex(1);
+      w = u8g.getWidth();
+      d = (w - u8g.getStrWidth("ERROR:")) / 2;
+      u8g.setColorIndex(1);
+      u8g.drawStr(d, 12, "ERROR:");
+      d = (w - u8g.getStrWidth("EXCEED MAXIMUM DRINKS")) / 2;
+      u8g.drawStr(d, 45, "EXCEED MAXIMUM DRINKS");   
   }
-    u8g.drawStr(d, 5 * h + 6, "DONE");
   
   u8gRedraw = false;
 }
@@ -893,42 +903,46 @@ void ratioAdjustAction(){
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void keypadAction(){
-  if(nameRegLength == 0) lcd.cursor();
-  switch(btnVal){
-      case 1: if(cursorPos == 28) cursorPos = 27;
-              else if(cursorPos > 6) cursorPos = cursorPos - 6;
-              break;
-      case 2: //if not in the left column already
-              if(cursorPos % 6 != 1 && cursorPos > 1) cursorPos = cursorPos - 1; 
-              break;
-      case 3: if(cursorPos + 6 <= 27) cursorPos = cursorPos + 6; 
-              else if(cursorPos >= 22) cursorPos = 28;
-              break;      
-      case 4: //if not in the right column already
-              if(cursorPos % 6 != 0 && cursorPos + 1 <= 28) cursorPos = cursorPos + 1; 
-              break; 
-      case 5: //done typing
-              if(cursorPos == 28 && nameRegLength != 0){
+  if(numDrinks < 12){
+    if(nameRegLength == 0) lcd.cursor();
+    switch(btnVal){
+        case 1: if(cursorPos == 28) cursorPos = 27;
+                else if(cursorPos > 6) cursorPos = cursorPos - 6;
+                break;
+        case 2: //if not in the left column already
+                if(cursorPos % 6 != 1 && cursorPos > 1) cursorPos = cursorPos - 1; 
+                break;
+        case 3: if(cursorPos + 6 <= 27) cursorPos = cursorPos + 6; 
+                else if(cursorPos >= 22) cursorPos = 28;
+                break;      
+        case 4: //if not in the right column already
+                if(cursorPos % 6 != 0 && cursorPos + 1 <= 28) cursorPos = cursorPos + 1; 
+                break; 
+        case 5: //done typing
+                if(cursorPos == 28 && nameRegLength != 0){
+                  lcd.noCursor();
+                  newDrink();
+                  modeNum = 4;
+                  cursorPos = 1;
+                //delete button
+                }else if(cursorPos == 27 && nameRegLength > 0){
+                  lcd.cursor();
+                  nameRegLength = nameRegLength - 1;
+                //typed new character, maximum is 10 characters  
+                }else if(nameRegLength < 10 && cursorPos <= 26){
+                  nameRegister[nameRegLength] = (char) (cursorPos + 64);
+                  nameRegLength = nameRegLength + 1;
+                  if(nameRegLength == 10) lcd.noCursor();
+                }
+                break;              
+        case 6: returnMain();
                 lcd.noCursor();
-                newDrink();
-                modeNum = 4;
-                cursorPos = 1;
-              //delete button
-              }else if(cursorPos == 27 && nameRegLength > 0){
-                lcd.cursor();
-                nameRegLength = nameRegLength - 1;
-              //typed new character, maximum is 10 characters  
-              }else if(nameRegLength < 10 && cursorPos <= 26){
-                nameRegister[nameRegLength] = (char) (cursorPos + 64);
-                nameRegLength = nameRegLength + 1;
-                if(nameRegLength == 10) lcd.noCursor();
-              }
-              break;              
-      case 6: returnMain();
-              lcd.noCursor();
-              nameRegLength = 0;
-              break;
-      default: break;
+                nameRegLength = 0;
+                break;
+        default: break;
+    }
+  }else{
+      if(btnVal == 6) returnMain();
   }
   //reset the btnVal
   btnVal = 0;
@@ -1172,11 +1186,18 @@ void lcdRatioAdjust(){
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void lcdKeypad(){
   lcd.clear();
-  lcd.home();
-  lcd.print(F("ENTER DRINK NAME"));
-  lcd.setCursor(0, 1);
-  for(byte countChar = 0; countChar < nameRegLength; countChar++){
-    lcd.print(nameRegister[countChar]);
+  if(numDrinks < 12){
+    lcd.home();
+    lcd.print(F("ENTER DRINK NAME"));
+    lcd.setCursor(0, 1);
+    for(byte countChar = 0; countChar < nameRegLength; countChar++){
+      lcd.print(nameRegister[countChar]);
+    }
+  }else{ 
+    lcd.setCursor(5,0);
+    lcd.print("ERROR");
+    lcd.setCursor(0,1);
+    lcd.print("CANNOT ADD DRINK");
   }
   lcdRedraw = false;
 }
