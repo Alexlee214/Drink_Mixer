@@ -422,23 +422,23 @@ void drawMain(){
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void drawSelectDrink(){
-  uint8_t i, h;
-  u8g_uint_t w, d;
-
-  h = u8g.getFontAscent() - u8g.getFontDescent();
-  w = u8g.getWidth()/2;
-
-  for(byte countItem = 0; countItem < numDrinks; countItem++){
-    if(countItem % 2 != 0) d = ((w - u8g.getStrWidth(drinks[countItem].drinkName)) / 2) + w;
-    else d = (w - u8g.getStrWidth(drinks[countItem].drinkName)) / 2;
-
-    u8g.setDefaultForegroundColor();
-    if ( (countItem + 1) == cursorPos ) {
-      u8g.drawBox((countItem % 2) * w, ((countItem / 2) * h + 1) + (countItem / 2), w, h);
-      u8g.setDefaultBackgroundColor();
+    uint8_t i, h;
+    u8g_uint_t w, d;
+  
+    h = u8g.getFontAscent() - u8g.getFontDescent();
+    w = u8g.getWidth()/2;
+  
+    for(byte countItem = 0; countItem < numDrinks; countItem++){
+      if(countItem % 2 != 0) d = ((w - u8g.getStrWidth(drinks[countItem].drinkName)) / 2) + w;
+      else d = (w - u8g.getStrWidth(drinks[countItem].drinkName)) / 2;
+  
+      u8g.setDefaultForegroundColor();
+      if ( (countItem + 1) == cursorPos ) {
+        u8g.drawBox((countItem % 2) * w, ((countItem / 2) * h + 1) + (countItem / 2), w, h);
+        u8g.setDefaultBackgroundColor();
+      }
+      u8g.drawStr(d, (countItem / 2 ) * h + 1 + (countItem / 2), drinks[countItem].drinkName);
     }
-    u8g.drawStr(d, (countItem / 2 ) * h + 1 + (countItem / 2), drinks[countItem].drinkName);
-  }
   
   u8gRedraw = false;
 }
@@ -470,23 +470,34 @@ void drawManual(){
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void drawEditDrink(){
-  uint8_t i, h;
   u8g_uint_t w, d;
-
-  h = u8g.getFontAscent() - u8g.getFontDescent();
-  w = u8g.getWidth()/2;
-
-  for(byte countItem = 0; countItem < numDrinks; countItem++){
-    if(countItem % 2 != 0) d = ((w - u8g.getStrWidth(drinks[countItem].drinkName)) / 2) + w;
-    else d = (w - u8g.getStrWidth(drinks[countItem].drinkName)) / 2;
-
-    u8g.setDefaultForegroundColor();
-    if ( (countItem + 1) == cursorPos ) {
-      u8g.drawBox((countItem % 2) * w, ((countItem / 2) * h + 1) + (countItem / 2), w, h);
-      u8g.setDefaultBackgroundColor();
+  
+  if(doneFlag == true){
+    uint8_t i, h;
+  
+    h = u8g.getFontAscent() - u8g.getFontDescent();
+    w = u8g.getWidth()/2;
+  
+    for(byte countItem = 0; countItem < numDrinks; countItem++){
+      if(countItem % 2 != 0) d = ((w - u8g.getStrWidth(drinks[countItem].drinkName)) / 2) + w;
+      else d = (w - u8g.getStrWidth(drinks[countItem].drinkName)) / 2;
+  
+      u8g.setDefaultForegroundColor();
+      if ( (countItem + 1) == cursorPos ) {
+        u8g.drawBox((countItem % 2) * w, ((countItem / 2) * h + 1) + (countItem / 2), w, h);
+        u8g.setDefaultBackgroundColor();
+      }
+      u8g.drawStr(d, (countItem / 2 ) * h + 1 + (countItem / 2), drinks[countItem].drinkName);
     }
-    u8g.drawStr(d, (countItem / 2 ) * h + 1 + (countItem / 2), drinks[countItem].drinkName);
-  }
+  }else{
+    
+      w = u8g.getWidth();
+      d = (w - u8g.getStrWidth("PLEASE WAIT")) / 2;
+      u8g.setColorIndex(1);
+      u8g.drawStr(d, 12, "PLEASE WAIT");
+      d = (w - u8g.getStrWidth("MAKING DRINK...")) / 2;
+      u8g.drawStr(d, 45, "MAKING DRINK...");
+  }  
   
   u8gRedraw = false;
 }
@@ -585,18 +596,25 @@ void drawKeypad(){
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void drawReset(){
-  uint8_t i, h;
   u8g_uint_t w, d;
-
-  w = u8g.getWidth();
-  d = (w - u8g.getStrWidth("WARNING!!!")) / 2;
-  u8g.setColorIndex(1);
-  u8g.drawStr(d, 12, "WARNING!!!");
-  d = (w - u8g.getStrWidth("RESET WILL")) / 2;
-  u8g.drawStr(d, 35, "RESET WILL");
-  d = (w - u8g.getStrWidth("CLEAR ALL DRINKS")) / 2;
-  u8g.drawStr(d, 47, "CLEAR ALL DRINKS");
   
+  if(doneFlag == true){
+    w = u8g.getWidth();
+    d = (w - u8g.getStrWidth("WARNING!!!")) / 2;
+    u8g.setColorIndex(1);
+    u8g.drawStr(d, 12, "WARNING!!!");
+    d = (w - u8g.getStrWidth("RESET WILL")) / 2;
+    u8g.drawStr(d, 35, "RESET WILL");
+    d = (w - u8g.getStrWidth("CLEAR ALL DRINKS")) / 2;
+    u8g.drawStr(d, 47, "CLEAR ALL DRINKS");
+  }else{
+    w = u8g.getWidth();
+    d = (w - u8g.getStrWidth("PLEASE WAIT")) / 2;
+    u8g.setColorIndex(1);
+    u8g.drawStr(d, 12, "PLEASE WAIT");
+    d = (w - u8g.getStrWidth("MAKING DRINK...")) / 2;
+    u8g.drawStr(d, 45, "MAKING DRINK...");
+  }
   u8gRedraw = false;
 }
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -789,29 +807,33 @@ void manualAction(){
 void editDrinkAction(){
     //reassign pointer
     curDrink = &drinks[cursorPos - 1];
-    switch(btnVal){
-      //up button
-      case 1: if(cursorPos > 2) cursorPos = cursorPos - 2;
-              break;
-      //left button        
-      case 2: if(cursorPos % 2 == 0 && cursorPos > 1) cursorPos = cursorPos - 1;
-              break;
-      //down button        
-      case 3: if(cursorPos + 2 <= numDrinks) cursorPos = cursorPos + 2;
-              break;
-      //right button        
-      case 4: if(cursorPos % 2 != 0 && cursorPos + 1 <= numDrinks) cursorPos = cursorPos + 1;
-              break;   
-      //select button                             
-      case 5: if(numDrinks > 0){
-                modeNum = 4;
-                cursorPos = 1;
-                initializeVolRegister(curDrink);
-              }
-              break;
-      case 6: returnMain();
-              break;
-      default: break;
+    if(doneFlag == true){
+      switch(btnVal){
+        //up button
+        case 1: if(cursorPos > 2) cursorPos = cursorPos - 2;
+                break;
+        //left button        
+        case 2: if(cursorPos % 2 == 0 && cursorPos > 1) cursorPos = cursorPos - 1;
+                break;
+        //down button        
+        case 3: if(cursorPos + 2 <= numDrinks) cursorPos = cursorPos + 2;
+                break;
+        //right button        
+        case 4: if(cursorPos % 2 != 0 && cursorPos + 1 <= numDrinks) cursorPos = cursorPos + 1;
+                break;   
+        //select button                             
+        case 5: if(numDrinks > 0){
+                  modeNum = 4;
+                  cursorPos = 1;
+                  initializeVolRegister(curDrink);
+                }
+                break;
+        case 6: returnMain();
+                break;
+        default: break;
+      }
+    }else{
+        if(btnVal == 6) returnMain();
     }
     //reset the btnVal
     btnVal = 0;      
@@ -957,13 +979,16 @@ void newDrink(){
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void resetAction(){
-  //reset the btnVal
+  if(doneFlag == true){
     switch(btnVal){
       case 5: resetMemory();
               goToSetPump();
               break;
       case 6: returnMain();        
       default: break;
+    }
+  }else{
+    if(btnVal == 6) returnMain();
   }
   //reset the btnVal
   btnVal = 0;
