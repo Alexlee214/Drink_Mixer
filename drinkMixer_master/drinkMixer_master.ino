@@ -33,7 +33,7 @@ const uint8_t leftArrow[] U8G_PROGMEM = {
 0x4  //00000100
 };
 
-const uint8_t rightArrow[] PROGMEM = {
+const uint8_t rightArrow[] U8G_PROGMEM = {
 0x0,  //00000000
 0x20,  //00100000
 0x30,  //00110000
@@ -45,7 +45,7 @@ const uint8_t rightArrow[] PROGMEM = {
 };
 
 
-const uint8_t deleteButton[] PROGMEM = {
+const uint8_t deleteButton[] U8G_PROGMEM = {
 0x0, //00000000
 0xf, //00001111
 0x1f, //00011111
@@ -93,7 +93,7 @@ drink *curDrink;
 //the 5 pumps in the machine
 drink pumps[5];
 
-char nameRegister[14];
+char nameRegister[11];
 byte nameRegLength = 0;
 
 byte volRegister[5] = {0, 0, 0, 0, 0};
@@ -134,25 +134,56 @@ void lcdKeypad();
 void lcdReset();
 void lcdAbout();
 void lcdSetPump();
+
+
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void setup() {
   Serial.begin(9600);
   // put your setup code here, to run once:
   lcdStartup();
-  u8g.begin();
   Wire.begin();  //join I2C as master device
-  //initializeMachine();
-  testInitializeDrinks();
-
+  u8g.begin();
+  u8g.setFont(u8g_font_6x10);
+  u8g.setFontRefHeightText();
+  u8g.setFontPosTop();
+  
   pinMode(upBtn, INPUT_PULLUP);
   pinMode(leftBtn, INPUT_PULLUP);
   pinMode(downBtn, INPUT_PULLUP);
   pinMode(rightBtn, INPUT_PULLUP);
   pinMode(confirmBtn, INPUT_PULLUP);
   pinMode(cancelBtn, INPUT_PULLUP);
+  //initializeEEPROM();
+  initializeMachine();
 }
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+//set the EEPROM to its initial state where nothing is set
+void initializeEEPROM(){
+  saveEEPROM(0, drinkDisk, 0);
+  saveEEPROM(102, drinkDisk, 100);
+  saveEEPROM(0, drinkDisk, 300);
+  
+}
+
+//----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void lcdStartup(){
   lcd.init();
   lcd.backlight();
@@ -165,6 +196,7 @@ void lcdStartup(){
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void loop() {
+  Serial.println(numDrinks);
   //redraw the 128x64 display only if necessary
   u8g.firstPage();
   if(u8gRedraw == true){
@@ -187,16 +219,6 @@ void loop() {
   }else if(millis() - drinkProgressTimer > 2000 && millis() - drinkProgressTimer < 2080){
     lcdRedraw = true;
   }
-  
-
-  Serial.println(millis() - drinkProgressTimer);
-  Serial.println(doneFlag);
-}
-
-void doneFlagTest(){
-  delay(1500);
-  doneFlag = true;
-  lcdRedraw = true;
 }
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //checks if any of the buttons are pressed, and sets the btnVal to the corresponding values if no buttons were pressed previously in the same cycle
@@ -338,39 +360,6 @@ void saveEEPROM(byte data, byte device, uint8_t eeaddress) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-byte inintializeDrink(){
-  //get the number of drinks
-  numDrinks = readEEPROM(1, drinkDisk);
-  //keep track of EEPROM location
-  byte drinkNameCounter = 3;
-
-  //get each drink one by one
-  for(byte drinkCount = 0; drinkCount < numDrinks; drinkCount++){
-    byte lengthChar = readEEPROM(drinkNameCounter, drinkDisk);
-    byte drinkLocation = readEEPROM(drinkNameCounter + 1, drinkDisk);
-
-    //get the name
-    for(byte charCount = 0; charCount < lengthChar; charCount++){
-      drinks[drinkCount].drinkName[charCount] = readEEPROM(drinkNameCounter + 2 + drinkCount, drinkDisk);
-    }
-
-    //get NameLength and drinkLocation
-    drinks[drinkCount].drinkLocation = drinkLocation;
-
-    //increment to the nextr drink
-    drinkNameCounter = drinkNameCounter + 2 + lengthChar;
-
-    //getVolume
-    unsigned int totalVol = 0;
-    for(byte countPump = 0; countPump < 5; countPump++){
-      totalVol = totalVol + readEEPROM(drinkLocation + countPump, drinkDisk);
-    }
-    drinks[drinkCount].volume = totalVol;
-  }
-
-  return numDrinks;
-}
-//----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void sendDrink(drink *myDrink){
   Wire.beginTransmission(slaveDevice);
   Wire.write(myDrink -> drinkLocation);
@@ -388,19 +377,10 @@ void sendDrink(drink *myDrink){
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void drawMain(){
-  // graphic commands to redraw the complete screen should be placed here  
-  u8g.setFont(u8g_font_6x10);
-  //u8g.setFont(u8g_font_4x6);
-  //u8g.setFont(u8g_font_5x8);
-  //u8g.setFont(u8g_font_04b_03);
-  //u8g.setFont(u8g_font_courB08);
-  //u8g.setFont(u8g_font_osb21);
 
   char *MainMenu[6] PROGMEM = {"SELECT DRINK", "MANUAL MODE", "EDIT DRINK", "ADD DRINK", "RESET MACHINE", "ABOUT"};
   uint8_t i, h;
   u8g_uint_t w, d;
-  u8g.setFontRefHeightText();
-  u8g.setFontPosTop();
   h = u8g.getFontAscent() - u8g.getFontDescent();
   w = u8g.getWidth();
 
@@ -596,10 +576,6 @@ void drawKeypad(){
         u8g.drawStr(d, (countItem / 6 ) * h + 1 + (countItem / 6), myChar);
       }
     }
-  
-    //while(true){
-      
-    //}
    
     //draw the done button
     d = (u8g.getWidth() - u8g.getStrWidth(F("DONE"))) / 2;
@@ -674,6 +650,7 @@ void drawSetPump(){
 
   h = u8g.getFontAscent() - u8g.getFontDescent();
   w = u8g.getWidth() / 6;
+  
   for(byte countItem = 0; countItem < 27; countItem++){
     switch(countItem % 6){
       case 0: d = ((w - u8g.getStrWidth("A")) / 2);
@@ -706,10 +683,6 @@ void drawSetPump(){
       u8g.drawStr(d, (countItem / 6 ) * h + 1 + (countItem / 6), myChar);
     }
   }
-
-  //while(true){
-    
-  //}
  
   //draw the done button
   d = (u8g.getWidth() - u8g.getStrWidth(F("DONE"))) / 2;
@@ -720,7 +693,7 @@ void drawSetPump(){
   }else{
     u8g.setColorIndex(1);
   }
-    u8g.drawStr(d, 5 * h + 6, F("DONE"));
+  u8g.drawStr(d, 5 * h + 6, F("DONE"));
   
   u8gRedraw = false;
 }
@@ -1044,6 +1017,7 @@ void resetMemory(){
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 void goToSetPump(){
+  nameRegLength = 0;
   modeNum = 8;
   cursorPos = 1;
   setPumpNum = 0;
@@ -1065,6 +1039,8 @@ void savePump(byte pumpNum){
   }
   //add the terminating character
   (myPump -> drinkName)[nameRegLength] = '\0';
+  pumpFreeLocation = pumpFreeLocation + 1 + nameRegLength;
+  
   setPumpNum = setPumpNum + 1;
   nameRegLength = 0;
   cursorPos = 1;
@@ -1084,6 +1060,7 @@ void aboutAction(){
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void setPumpAction(){
+  Serial.println(cursorPos);
   if(nameRegLength == 0) lcd.cursor();
   //reset the btnVal
     switch(btnVal){
@@ -1261,9 +1238,9 @@ void lcdSetPump(){
 * loc0: first free location, loc2: length of first name, loc3: location in drinkDisk
 *
 */
-byte initializeDrinks(){
+void initializeDrinks(){
   //get thew number of drinks
-  numDrinks = readEEPROM(drinkDisk, 0);
+  numDrinks = readEEPROM(0, drinkDisk);
   //keep track of the EEPROM location, 102 stores the length of first
   byte drinkNameCounter = 102;
 
@@ -1317,103 +1294,3 @@ void initializeMachine(){
 
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
-void testInitializeDrinks(){
-  numDrinks = 5;
-  (drinks[0].drinkName)[0] = 'W';
-  (drinks[0].drinkName)[1] = 'H';
-  (drinks[0].drinkName)[2] = 'I';
-  (drinks[0].drinkName)[3] = 'S';
-  (drinks[0].drinkName)[4] = 'K';
-  (drinks[0].drinkName)[5] = 'E';
-  (drinks[0].drinkName)[6] = 'Y';
-  (drinks[0].drinkName)[7] = '\0';
-  drinks[0].drinkLocation = 5;
-  drinks[0].volume = 40;
-
-  (drinks[1].drinkName)[0] = 'D';
-  (drinks[1].drinkName)[1] = 'A';
-  (drinks[1].drinkName)[2] = 'I';
-  (drinks[1].drinkName)[3] = 'Q';
-  (drinks[1].drinkName)[4] = 'U';
-  (drinks[1].drinkName)[5] = 'R';
-  (drinks[1].drinkName)[6] = 'I';
-  (drinks[1].drinkName)[7] = '\0';
-  drinks[1].drinkLocation = 10;
-  drinks[1].volume = 120;
-
-  (drinks[2].drinkName)[0] = 'M';
-  (drinks[2].drinkName)[1] = 'O';
-  (drinks[2].drinkName)[2] = 'J';
-  (drinks[2].drinkName)[3] = 'I';
-  (drinks[2].drinkName)[4] = 'T';
-  (drinks[2].drinkName)[5] = 'O';
-  (drinks[2].drinkName)[6] = '\0';
-  drinks[2].drinkLocation = 15;
-  drinks[2].volume = 72; 
-
-  (drinks[3].drinkName)[0] = 'v';
-  (drinks[3].drinkName)[1] = 'o';
-  (drinks[3].drinkName)[2] = 'd';
-  (drinks[3].drinkName)[3] = 'k';
-  (drinks[3].drinkName)[4] = 'a';
-  (drinks[3].drinkName)[5] = '\0';
-  drinks[3].drinkLocation = 20;
-  drinks[3].volume = 68; 
-
-    (drinks[4].drinkName)[0] = 'R';
-  (drinks[4].drinkName)[1] = 'U';
-  (drinks[4].drinkName)[2] = 'M';
-  (drinks[4].drinkName)[4] = '\0';
-  drinks[4].drinkLocation = 25;
-  drinks[4].volume = 28; 
-
-  pumps[0].drinkName[0] = 'W';
-  pumps[0].drinkName[1] = 'H';
-  pumps[0].drinkName[2] = 'I';
-  pumps[0].drinkName[3] = 'S';
-  pumps[0].drinkName[4] = 'K';
-  pumps[0].drinkName[5] = 'E';
-  pumps[0].drinkName[6] = 'Y';
-  pumps[0].drinkName[7] = '\0';
-  pumps[0].drinkLocation = 1;
-
-  
-  pumps[1].drinkName[0] = 'v';
-  pumps[1].drinkName[1] = 'o';
-  pumps[1].drinkName[2] = 'd';
-  pumps[1].drinkName[3] = 'k';
-  pumps[1].drinkName[4] = 'a';
-  pumps[1].drinkName[5] = '\0';
-  pumps[1].drinkLocation = 2;
-
-  
-  pumps[2].drinkName[0] = 'r';
-  pumps[2].drinkName[1] = 'u';
-  pumps[2].drinkName[2] = 'm';
-  pumps[2].drinkName[3] = '\0';
-    pumps[2].drinkLocation = 3;
-
-  
-  pumps[3].drinkName[0] = 't';
-  pumps[3].drinkName[1] = 'e';
-  pumps[3].drinkName[2] = 'q';
-  pumps[3].drinkName[3] = 'u';
-  pumps[3].drinkName[4] = 'i';
-  pumps[3].drinkName[5] = 'l';
-  pumps[3].drinkName[6] = 'l';
-  pumps[3].drinkName[7] = 'a';
-  pumps[3].drinkName[8] = '\0';
-    pumps[3].drinkLocation = 4;
-
-  pumps[4].drinkName[0] = 's';
-  pumps[4].drinkName[1] = 'p';
-  pumps[4].drinkName[2] = 'r';
-  pumps[4].drinkName[3] = 'i';
-  pumps[4].drinkName[4] = 't';
-  pumps[4].drinkName[5] = 'e';
-  pumps[4].drinkName[6] = '\0';
-    pumps[4].drinkLocation = 6;
-}
-
