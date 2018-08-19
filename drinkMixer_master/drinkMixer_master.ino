@@ -2,7 +2,7 @@
 #include <U8glib.h>
 #include <LiquidCrystal_I2C.h>
 
-U8GLIB_ST7920_128X64 u8g(13, 12, 11, U8G_PIN_NONE);                  // SPI Com: SCK = en = 13, MOSI = rw = 11, CS = di = 0
+U8GLIB_ST7920_128X64 u8g(7, 6, 5, U8G_PIN_NONE);                  // SPI Com: SCK = en = 13, MOSI = rw = 11, CS = di = 0
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -62,12 +62,12 @@ const byte slaveDevice = 8;
 const byte drinkDisk = 0x50;
 
 //buttons for controlling machine
-const byte upBtn = 9;
-const byte leftBtn = 8;
-const byte downBtn = 7;
-const byte rightBtn = 6;
-const byte confirmBtn = 5;
-const byte cancelBtn = 4;
+const byte upBtn = 13;
+const byte leftBtn = 12;
+const byte downBtn = 11;
+const byte rightBtn = 10;
+const byte confirmBtn = 9;
+const byte cancelBtn = 8;
 
 
 //0 = none, 1 = up, 2 = left, 3 = down, 4 = right, 5 = confirm, 6 = cancel
@@ -155,10 +155,11 @@ void lcdSetPump();
 
 
 void setup() {
-  Serial.begin(9600);
-  // put your setup code here, to run once:
-  lcdStartup();
+  ////Serial.begin(9600);
+  
   Wire.begin();  //join I2C as master device
+  
+  lcdStartup();
   u8g.begin();
   u8g.setFont(u8g_font_6x10);
   u8g.setFontRefHeightText();
@@ -196,7 +197,7 @@ void lcdStartup(){
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void loop() {
-  Serial.println(numDrinks);
+  //Serial.println(numDrinks);
   //redraw the 128x64 display only if necessary
   u8g.firstPage();
   if(u8gRedraw == true){
@@ -361,6 +362,8 @@ void saveEEPROM(byte data, byte device, uint8_t eeaddress) {
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void sendDrink(drink *myDrink){
+  //Serial.print("Sending: ");
+  //Serial.println(myDrink -> drinkLocation);
   Wire.beginTransmission(slaveDevice);
   Wire.write(myDrink -> drinkLocation);
   Wire.endTransmission();
@@ -770,7 +773,7 @@ void selectDrinkAction(){
       case 4: if(cursorPos % 2 != 0 && cursorPos + 1 <= numDrinks) cursorPos = cursorPos + 1;
               break;   
       //select button                             
-      case 5: if(numDrinks != 0){ 
+      case 5: if(numDrinks != 0 && millis() - drinkProgressTimer >= 2000){ 
                 sendDrink(curDrink);
                 doneFlag = false;
               }
@@ -796,7 +799,21 @@ void manualAction(){
       //down button        
       case 3: if(cursorPos < 5) cursorPos = cursorPos + 1;
             break;
-      case 5: sendDrink(curDrink);
+      case 5: if(doneFlag == true && millis() - drinkProgressTimer >= 2000)
+                sendDrink(curDrink);
+                delay(250);
+                /*
+                switch(curDrink->drinkLocation){
+                  case 1: 
+                  case 2:
+                  case 5: delay(200);
+                          break;
+                  case 4: delay(250);
+                          break;
+                  case 3: delay(100);
+                          break;
+                }
+                */
               break;      
       case 6: returnMain();
               break;
@@ -1040,6 +1057,13 @@ void savePump(byte pumpNum){
   //add the terminating character
   (myPump -> drinkName)[nameRegLength] = '\0';
   pumpFreeLocation = pumpFreeLocation + 1 + nameRegLength;
+
+  //set the drinkLocation
+  switch(pumpNum){
+    case 4: myPump -> drinkLocation = 6;
+            break;
+    default: myPump -> drinkLocation = pumpNum + 1;
+  }
   
   setPumpNum = setPumpNum + 1;
   nameRegLength = 0;
@@ -1060,7 +1084,7 @@ void aboutAction(){
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void setPumpAction(){
-  Serial.println(cursorPos);
+  //Serial.println(cursorPos);
   if(nameRegLength == 0) lcd.cursor();
   //reset the btnVal
     switch(btnVal){
@@ -1284,6 +1308,14 @@ void initializeMachine(){
       }
       //add the terminating character
       pumps[countPump].drinkName[charCount] = '\0';
+
+      //initialize the drink location
+      switch(countPump){
+          case 4: pumps[countPump].drinkLocation = 6;
+            break;
+          default: pumps[countPump].drinkLocation = countPump + 1;
+  }
+      
       pumpFreeLocation = pumpFreeLocation + 1 + charCount;
     }
     pumpFreeLocation = 301;

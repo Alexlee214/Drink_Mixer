@@ -7,7 +7,7 @@ void setup() {
   for(int i = 0; i < 100; i++){
     Serial.print("writing to location: ");
     Serial.print(i);
-    saveEEPROM(0x50, i, 12);
+    //saveEEPROM(0x50, i, 12);
     Serial.print(", reading value: ");
     Serial.println(readEEPROM(0x50, i));
   }
